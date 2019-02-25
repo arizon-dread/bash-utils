@@ -20,7 +20,6 @@ fi
 cd $cert_path
 keyfiles=()
 p12=()
-echo "$oneliner"
 echo "-----------------"
 for filename in $(ls $cert_path);do
 	if [[ ! -d $filename ]]; then
