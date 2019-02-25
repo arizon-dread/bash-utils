@@ -1,9 +1,9 @@
 #!/bin/bash
 
-help="$0 [/path/to/certdir]"
+help="$0 [/path/to/certdir] -o (to get each cert on one line so you can filter it with grep)"
 cert_path=$(pwd)
 oneliner="false"
-if [ $# -gt "1" ]
+if [ $# -gt "0" ]
 then
         while getopts "p:oh?" opt; do
 	    	case "$opt" in
@@ -20,6 +20,7 @@ fi
 cd $cert_path
 keyfiles=()
 p12=()
+echo "$oneliner"
 echo "-----------------"
 for filename in $(ls $cert_path);do
 	if [[ ! -d $filename ]]; then
@@ -34,19 +35,21 @@ for filename in $(ls $cert_path);do
 			subject=`openssl x509 -in $filename -noout -subject`
 			enddate=`openssl x509 -in $filename -noout -enddate`
 			date=$(date '+%s')
-			if [[ "$oneliner" = "false" ]];then
+			enddateTimeStamp=$(echo "$enddate" | cut -d'=' -f2)
+			unixTime=$(date -d "$enddateTimeStamp" '+%s')
+			if [[ $unixTime -lt $date ]];then
+				expired="\e[1;31mEXPIRED\e[0m"
+			fi
+			if [ $oneliner = "false" ];then
 				echo "filename: $filename"
 				openssl x509 -in $filename -noout -enddate -subject
 				echo "enddate: $enddate"
-				enddateTimeStamp=$(echo "$enddate" | cut -d'=' -f2)
-				unixTime=$(date -d "$enddateTimeStamp" '+%s')
-				if [[ $unixTime -lt $date ]];then
-					echo -e "\e[1;31mEXPIRED\e[0m"
-				fi
 				echo "-----------------"
 			else
-				line="filename: $filename | subject: $subject | enddate: $enddate" 
+				echo -e "filename: $filename | subject: $subject | enddate: $enddate $expired" 
+				
 			fi
+			expired=""
 		fi
 	fi
 done
