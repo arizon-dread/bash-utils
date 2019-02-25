@@ -1,0 +1,19 @@
+#!/bin/bash
+path=$1
+if [ -z "$1" ]
+then
+	path=$(pwd .)
+fi
+lscmd="ls -lL --color=always $path"
+echo "$($lscmd)"
+old=$($lscmd)
+new=""
+while true; do
+	new=$($lscmd) 
+	if test "$old" != "$new" ; then
+		echo "$path"
+		$lscmd
+		old=$new
+	fi
+	sleep 1
+done

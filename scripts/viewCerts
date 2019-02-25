@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# A POSIX variable
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+
+# Initialize our own variables:
+cert_file=""
+deleteTmpAfterUse=false
+help="$0 -c /path/to/certfile [-d to delete temp cert files after command output]"
+nodeletion=false
+opensslFlags=""
+if [ $# -lt "1" ]
+then
+	echo "$help"
+	exit 1
+fi
+while getopts "c:do:h?" opt; do
+    case "$opt" in
+    c)  cert_file=$OPTARG
+        ;;
+    d)  deleteTmpAfterUse=true
+	;;
+    o)	opensslFlags="$OPTARG"
+	;;
+    *)  echo $help 
+	exit 1
+	;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+[ "${1:-}" = "--" ] && shift
+
+if [ -z "$opensslFlags" ]
+then
+	opensslFlags="-issuer -subject -dates -noout"
+fi
+
+if [ -d "./tmp" ]
+then
+	if [ "$deleteTmpAfterUse" = "true" ]
+	then
+		nodeletion="./tmp exists prior to split command, will not force deletion after output. Delete manually."
+	fi
+else
+	$(mkdir ./tmp)
+fi
+
+$(csplit -f ./tmp/cert- $cert_file '%-----BEGIN CERTIFICATE-----%' '/-----BEGIN CERTIFICATE-----/' '{*}')
+cd .
+for filename in tmp/cert*;do
+	echo "$filename:"
+	openssl x509 $opensslFlags -in $filename
+done
+if [ "$nodeletion" != "false" ]
+then
+	echo "$nodeletion"
+elif [ "$deleteTmpAfterUse" = "true" ]
+then
+	$(rm -r ./tmp)
+fi
+exit 0

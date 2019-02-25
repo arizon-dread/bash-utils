@@ -1,0 +1,69 @@
+#!/bin/bash
+
+help="$0 [/path/to/certdir]"
+cert_path=$(pwd)
+oneliner="false"
+if [ $# -gt "1" ]
+then
+        while getopts "p:oh?" opt; do
+	    	case "$opt" in
+		    p)  cert_path=$OPTARG
+	        	;;
+		    o)	oneliner="true"
+			;;
+		    *)  echo $help
+	        	exit 1
+	        	;;
+		esac
+	done
+fi
+cd $cert_path
+keyfiles=()
+p12=()
+echo "-----------------"
+for filename in $(ls $cert_path);do
+	if [[ ! -d $filename ]]; then
+		if [[ $(head -n1 $filename) == *"PRIVATE KEY"* ]]; then
+			keyfiles+=($filename)
+		elif [[ $filename == *"key"* ]]; then
+			keyfiles+=($filename)
+		elif [[ $filename == *".p12" ]]; then
+			p12+=($filename)
+		else
+			
+			subject=`openssl x509 -in $filename -noout -subject`
+			enddate=`openssl x509 -in $filename -noout -enddate`
+			date=$(date '+%s')
+			if [[ "$oneliner" = "false" ]];then
+				echo "filename: $filename"
+				openssl x509 -in $filename -noout -enddate -subject
+				echo "enddate: $enddate"
+				enddateTimeStamp=$(echo "$enddate" | cut -d'=' -f2)
+				unixTime=$(date -d "$enddateTimeStamp" '+%s')
+				if [[ $unixTime -lt $date ]];then
+					echo -e "\e[1;31mEXPIRED\e[0m"
+				fi
+				echo "-----------------"
+			else
+				line="filename: $filename | subject: $subject | enddate: $enddate" 
+			fi
+		fi
+	fi
+done
+if [[ ${#keyfiles[@]} > 0 ]]; then
+	echo "Keyfiles that wasnt inspected:"
+	echo "-----------------"
+	for f in ${keyfiles[@]};do
+		echo "$f"
+	done
+	echo "-----------------"
+fi
+if [[ ${#p12[@]} > 0 ]]; then
+	echo "p12-files that wasnt inspected:"
+	echo "-----------------"
+	for e in ${p12[@]};do
+                echo "$e"
+        done
+	echo "-----------------"
+fi
+exit 0
