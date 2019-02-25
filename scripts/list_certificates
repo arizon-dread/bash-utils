@@ -42,8 +42,10 @@ for filename in $(ls $cert_path);do
 			fi
 			if [ $oneliner = "false" ];then
 				echo "filename: $filename"
-				openssl x509 -in $filename -noout -enddate -subject
-				echo "enddate: $enddate"
+				openssl x509 -in $filename -noout -subject -enddate
+				if [ ! -z "$expired" ];then
+					echo -e $expired
+				fi
 				echo "-----------------"
 			else
 				echo -e "filename: $filename | subject: $subject | enddate: $enddate $expired" 
