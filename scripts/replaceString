@@ -15,6 +15,9 @@ then
 			;;
 			f) file=$OPTARG
 			;;
+			h) echo $help
+			exit 1
+			;;
 			*) echo $help
 			exit 1
 			;;
