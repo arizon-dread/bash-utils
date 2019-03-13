@@ -21,9 +21,10 @@ cd $cert_path
 keyfiles=()
 p12=()
 echo "-----------------"
-for filename in $(ls $cert_path);do
-	if [[ ! -d $filename ]]; then
-		if [[ $(head -n1 $filename) == *"PRIVATE KEY"* ]]; then
+while IFS= read -r -d '' filename; do	
+#for filename in $(ls $cert_path);do
+	if [[ ! -d "$filename" ]]; then
+		if [[ $(head -n1 "$filename") == *"PRIVATE KEY"* ]]; then
 			keyfiles+=($filename)
 		elif [[ $filename == *"key"* ]]; then
 			keyfiles+=($filename)
@@ -31,8 +32,8 @@ for filename in $(ls $cert_path);do
 			p12+=($filename)
 		else
 			
-			subject=`openssl x509 -in $filename -noout -subject`
-			enddate=`openssl x509 -in $filename -noout -enddate`
+			subject=`openssl x509 -in "$filename" -noout -subject`
+			enddate=`openssl x509 -in "$filename" -noout -enddate`
 			date=$(date '+%s')
 			enddateTimeStamp=$(echo "$enddate" | cut -d'=' -f2)
 			unixTime=$(date -d "$enddateTimeStamp" '+%s')
@@ -41,7 +42,7 @@ for filename in $(ls $cert_path);do
 			fi
 			if [ $oneliner = "false" ];then
 				echo "filename: $filename"
-				openssl x509 -in $filename -noout -subject -enddate
+				openssl x509 -in "$filename" -noout -subject -enddate
 				if [ ! -z "$expired" ];then
 					echo -e $expired
 				fi
@@ -53,7 +54,7 @@ for filename in $(ls $cert_path);do
 			expired=""
 		fi
 	fi
-done
+done < <(find $cert_path -type f -print0)
 if [[ ${#keyfiles[@]} > 0 ]]; then
 	echo "Keyfiles that wasnt inspected:"
 	echo "-----------------"
